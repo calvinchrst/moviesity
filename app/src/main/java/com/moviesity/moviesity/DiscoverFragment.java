@@ -3,12 +3,15 @@ package com.moviesity.moviesity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -104,12 +107,25 @@ public class DiscoverFragment extends Fragment {
         new FetchMovieTask().execute(sortValue);
     }
 
-    public class FetchMovieTask extends AsyncTask<String, Void, ArrayList<Movie>> {
+    public class FetchMovieTask extends AsyncTask<String, String, ArrayList<Movie>> {
 
         private String LOG_TAG = FetchMovieTask.class.getSimpleName();
 
+        private boolean isOnline() {
+            ConnectivityManager connectivityManager = (ConnectivityManager) getActivity().
+                    getSystemService(Context.CONNECTIVITY_SERVICE);
+            NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
+            return networkInfo != null && networkInfo.isConnected();
+        }
+
         @Override
         protected ArrayList<Movie> doInBackground(String... strings) {
+
+            // Check Connection
+            if (! isOnline()) {
+                publishProgress("Network is not connected");
+                return null;
+            }
 
             // Both put outside try/catch block so that they can be closed in finally block
             HttpURLConnection urlConnection = null;
@@ -164,7 +180,7 @@ public class DiscoverFragment extends Fragment {
 
                 if (buffer.length() == 0) return null;
                 movieJsonStr = buffer.toString();
-                Log.v(LOG_TAG, "movieJsonStr: " + movieJsonStr);
+                //Log.v(LOG_TAG, "movieJsonStr: " + movieJsonStr);
             } catch (IOException e) {
                 Log.e(LOG_TAG, e.getMessage(), e);
                 // If the code didn't successfully get the weather data, there's no point in attempting
@@ -190,6 +206,15 @@ public class DiscoverFragment extends Fragment {
                 Log.e(LOG_TAG, "JSON Exception: " + e.getMessage(), e);
             }
             return null;
+        }
+
+        @Override
+        protected void onProgressUpdate(String... values) {
+            Snackbar snackbar = Snackbar.make(
+                    getActivity().findViewById(R.id.main_activity_coordinator_layout),
+                    values[0],
+                    Snackbar.LENGTH_LONG);
+            snackbar.show();
         }
 
         @Override
