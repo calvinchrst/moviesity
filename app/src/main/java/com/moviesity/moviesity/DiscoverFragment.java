@@ -1,9 +1,11 @@
 package com.moviesity.moviesity;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -34,9 +36,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * A placeholder fragment containing a simple view.
- */
 public class DiscoverFragment extends Fragment {
 
     private DiscoverAdapter mDiscoverAdapter;
@@ -86,15 +85,18 @@ public class DiscoverFragment extends Fragment {
     }
 
     private void updateMovie() {
-        new FetchMovieTask().execute();
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        String sortValue = prefs.getString(getString(R.string.pref_sort_key),
+                getString(R.string.pref_sort_key_popular));
+        new FetchMovieTask().execute(sortValue);
     }
 
-    public class FetchMovieTask extends AsyncTask<Void, Void, ArrayList<Movie>> {
+    public class FetchMovieTask extends AsyncTask<String, Void, ArrayList<Movie>> {
 
         private String LOG_TAG = FetchMovieTask.class.getSimpleName();
 
         @Override
-        protected ArrayList<Movie> doInBackground(Void... voids) {
+        protected ArrayList<Movie> doInBackground(String... strings) {
 
             // Both put outside try/catch block so that they can be closed in finally block
             HttpURLConnection urlConnection = null;
@@ -103,15 +105,23 @@ public class DiscoverFragment extends Fragment {
             // Will contain the raw JSON response as a string.
             String movieJsonStr = null;
 
+            // Example API Request: https://api.themoviedb.org/3/discover/movie?sort_by=popularity.desc&api_key=c52dcf21b2d2216733871b9ab0aa00e4
+            final String MOVIE_DISCOVER_BASE_URL =
+                    "https://api.themoviedb.org/3/discover/movie";
+            final String SORT_BY_PARAM = "sort_by";
+            final String API_KEY_PARAM = "api_key";
+            final String SORT_BY_VALUE;
+            if (strings[0].equals(getString(R.string.pref_sort_key_popular))) {
+                SORT_BY_VALUE = "popularity.desc";
+            } else if (strings[0].equals(getString(R.string.pref_sort_key_rating))) {
+                SORT_BY_VALUE = "vote_average.desc";
+            } else {
+                Log.e(LOG_TAG, "Unknow sorting_value " + strings[0]);
+                return null;
+            }
+
             // try to get the movie data from API
             try {
-                // Example API Request: https://api.themoviedb.org/3/discover/movie?sort_by=popularity.desc&api_key=c52dcf21b2d2216733871b9ab0aa00e4
-                final String MOVIE_DISCOVER_BASE_URL =
-                        "https://api.themoviedb.org/3/discover/movie";
-                final String SORT_BY_PARAM = "sort_by";
-                final String SORT_BY_VALUE = "popularity.desc";     // Rating: vote_average.desc
-                final String API_KEY_PARAM = "api_key";
-
                 Uri.Builder uri = new Uri.Builder();
                 uri.encodedPath(MOVIE_DISCOVER_BASE_URL)
                         .appendQueryParameter(SORT_BY_PARAM, SORT_BY_VALUE)
@@ -212,6 +222,8 @@ public class DiscoverFragment extends Fragment {
         }
     }
 
+    // TODO: Set Image Size to fill the screen
+
     private class DiscoverAdapter extends ArrayAdapter<String> {
 
         private String LOG_TAG = DiscoverAdapter.class.getSimpleName();
@@ -237,7 +249,7 @@ public class DiscoverFragment extends Fragment {
                 URL url = new URL(uri.toString());
                 Picasso.with(getActivity())
                         .load(url.toString())
-                        .into(imageView);               // TODO: Set Image Size to fill the screen
+                        .into(imageView);
             } catch (MalformedURLException e) {
                 Log.e(LOG_TAG, e.getMessage(), e);
             }
