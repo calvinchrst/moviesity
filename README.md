@@ -1,6 +1,10 @@
-# Project Title
+# Project Description
 
-Discover the most popular movies playing.
+Discover the most popular and top rated movies playing now.
+
+## Current Beta APK
+
+[Download APK](https://www.dropbox.com/s/syp328f9anjz37f/moviesity-1.0.apk?dl=0)
 
 ## Authors
 
