@@ -17,6 +17,13 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+
+    // DON'T commit the block below because it contains API KEY!
+    // Start of not commit
+    buildTypes.each {
+        it.buildConfigField 'String', 'THEMOVIEDB_ORG_API_KEY', '"c52dcf21b2d2216733871b9ab0aa00e4"'
+    }
+    // End of not commit
 }
 
 dependencies {
