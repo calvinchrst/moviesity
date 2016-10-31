@@ -1,6 +1,7 @@
 package com.moviesity.moviesity;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -16,6 +17,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.GridView;
 import android.widget.ImageView;
@@ -39,6 +41,7 @@ import java.util.List;
 public class DiscoverFragment extends Fragment {
 
     private DiscoverAdapter mDiscoverAdapter;
+    private ArrayList<Movie> movieArrayList;
 
     public DiscoverFragment() {
     }
@@ -53,6 +56,7 @@ public class DiscoverFragment extends Fragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
+        movieArrayList = new ArrayList<>();
     }
 
     @Override
@@ -77,9 +81,18 @@ public class DiscoverFragment extends Fragment {
 
         // Setup gridView adapter
         mDiscoverAdapter = new DiscoverAdapter(getActivity(), R.layout.grid_item_discover,
-                R.id.grid_item_discover_image_view, new ArrayList<String>());
+                R.id.grid_item_discover_image_view, new ArrayList<Movie>());
         GridView discoverGridView = (GridView) rootView.findViewById(R.id.grid_view_discover);
         discoverGridView.setAdapter(mDiscoverAdapter);
+
+        discoverGridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                Intent detailActivityIntent = new Intent(getActivity(), DetailActivity.class)
+                        .putExtra("parcelable_extra", movieArrayList.get(i));
+                startActivity(detailActivityIntent);
+            }
+        });
 
         return rootView;
     }
@@ -171,7 +184,8 @@ public class DiscoverFragment extends Fragment {
             // code will only get here if no error caught
             // extract JSON
             try {
-                return getMovieDataFromJson(movieJsonStr);
+                movieArrayList = getMovieDataFromJson(movieJsonStr);
+                return movieArrayList;
             } catch (JSONException e) {
                 Log.e(LOG_TAG, "JSON Exception: " + e.getMessage(), e);
             }
@@ -182,13 +196,7 @@ public class DiscoverFragment extends Fragment {
         protected void onPostExecute(ArrayList<Movie> movieList) {
             if (movieList != null) {
                 mDiscoverAdapter.clear();
-
-                ArrayList<String> poster_path_list = new ArrayList<>();
-                // update Adapter with poster path only
-                for (Movie aMovie : movieList) {
-                    poster_path_list.add(aMovie.getPoster_path());
-                }
-                mDiscoverAdapter.addAll(poster_path_list);
+                mDiscoverAdapter.addAll(movieList);
             }
         }
 
@@ -222,17 +230,16 @@ public class DiscoverFragment extends Fragment {
         }
     }
 
-    // TODO: Set Image Size to fill the screen
+    // TODO: Set Image Size to fill the screen (Currently there's blank space on the poster display)
 
-    private class DiscoverAdapter extends ArrayAdapter<String> {
+    private class DiscoverAdapter extends ArrayAdapter<Movie> {
 
         private String LOG_TAG = DiscoverAdapter.class.getSimpleName();
 
-        private static final String IMAGE_BASE_URL = "http://image.tmdb.org/t/p/w300";
         // Example Movie Request http://image.tmdb.org/t/p/w185//IfB9hy4JH1eH6HEfIgIGORXi5h.jpg
 
-        public DiscoverAdapter(Context context, int resource, int imageViewResourceId, List<String> strings) {
-            super(context, resource, imageViewResourceId, strings);
+        public DiscoverAdapter(Context context, int resource, int imageViewResourceId, List<Movie> movieList) {
+            super(context, resource, imageViewResourceId, movieList);
         }
 
         @NonNull
@@ -242,11 +249,8 @@ public class DiscoverFragment extends Fragment {
             if (convertView == null) imageView = new ImageView(this.getContext());
             else imageView = (ImageView) convertView;
 
-            // build url to fetch image
-            Uri.Builder uri = new Uri.Builder();
-            uri.encodedPath(IMAGE_BASE_URL).appendEncodedPath(getItem(position)).build();
             try {
-                URL url = new URL(uri.toString());
+                URL url = getItem(position).getPosterFullUrl();
                 Picasso.with(getActivity())
                         .load(url.toString())
                         .into(imageView);

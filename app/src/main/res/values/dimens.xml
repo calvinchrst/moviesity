@@ -3,4 +3,8 @@
     <dimen name="activity_horizontal_margin">16dp</dimen>
     <dimen name="activity_vertical_margin">16dp</dimen>
 
+    <!-- Movie Detail Dimensions -->
+    <dimen name="movie_detail_view_vertical_margin">10dp</dimen>
+    <dimen name="title_text_size">30sp</dimen>
+
 </resources>
